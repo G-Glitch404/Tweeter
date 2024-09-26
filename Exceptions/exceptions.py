@@ -1,0 +1,1 @@
+NoUsername = type('NoUsername', (ValueError,), {})
