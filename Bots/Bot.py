@@ -72,7 +72,7 @@ class Bot(ABC):
 
     def tweet_video(self, api, media_file_path):
         """ make a video post on X """
-        if media_file_path.split('.')[-1] == 'mp4':
+        if not media_file_path.split('.')[-1] == 'mp4':
             self.logger.error(f'file type ".{media_file_path.split(".")[-1]}" is not supported only supported types are (".mp4", )')
             return False
         return self.__upload_media(api, 'video/mp4', media_file_path)

@@ -162,9 +162,21 @@ class RedditAPI(Session):
 
         self.logger.info(f'downloading media from url: "{media_link}"')
 
-        file = open(f"{filename or media_link.split('?')[0].replace("/", " ").strip().split()[-1]}", 'wb')
-        for content in self.get(media_link).iter_content(1024 * 1024):
+        file = open(f"{filename or media_link.split('?')[0].replace("/", " ").strip().split()[-1]}", 'ab')
+        for content in self.get(media_link, stream=True).iter_content(1024*1024):
             if content: file.write(content)
 
         file.close()
         return file.name
+
+
+if __name__ == '__main__':
+    import random
+
+    crawler = RedditAPI()
+
+    video = [item for item in crawler.get_community_posts('Unexpected', 1)]
+    video = random.choice(video)
+
+    filename_ = crawler.download_media(video['postVideoLink'], 'test_video.mp4')
+    print(filename_)

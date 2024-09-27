@@ -44,7 +44,7 @@ if __name__ == '__main__':
     post_ = Post(
         index=0,
         post_type='image',
-        body='body',
+        body='this is just a test',
         media_file_path=path('media', 'test.jpeg'),
         upload_date=dt.now(),
         bot_username='NewDayNewComic'
