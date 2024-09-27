@@ -25,7 +25,7 @@ class Bot(ABC):
         self.logger.debug(f'{logger_name} initialized successfully')
 
     @catch_exceptions
-    def __upload_media(self, api: TwitterAPI, media_type: str, media_file_path: str) -> str:
+    def __upload_media(self, api: TwitterAPI, media_type: str, media_file_path: str) -> Union[bool, str]:
         """ post a tweet on X """
         file = open(media_file_path, 'rb')
         file_size: int = file.seek(0, 2); file.seek(0)
@@ -35,6 +35,10 @@ class Bot(ABC):
             total_bytes=file_size,
             return_json=True
         )
+
+        if not response["media_id"]:
+            self.logger.error(f'failed to upload media with media_type: "{media_type}" and media_file_path: "{media_file_path}"')
+            return False
 
         api.upload_media_chunked_append(
             media_id=response['media_id'],

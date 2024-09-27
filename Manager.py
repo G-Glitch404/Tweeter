@@ -27,13 +27,15 @@ def manager(account_username: str, post: Post) -> bool:
 
     logger.info(f'making a post with bot username: "{account_username}"')
     automated_user = automated_user()
-    automated_user.post(post)
+    if automated_user.post(post):
+        db.insert_tweet(tuple(value[-1] for value in post.items()))
+        db.delete_record(post.index, 'posts')
 
-    db.insert_tweet(tuple(value[-1] for value in post.items()))
-    db.delete_record(post.index, 'posts')
+        logger.info(f'post index_id: "{post.index}" was successfully posted on page username "{account_username}" and deleted from database table "posts"')
+        return True
 
-    logger.info(f'post index_id: "{post.index}" was successfully posted on page username "{account_username}" and deleted from database table "posts"')
-    return True
+    logger.error(f'failed to post post index_id: "{post.index}" on page username "{account_username}"')
+    return False
 
 
 if __name__ == '__main__':

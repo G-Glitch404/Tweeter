@@ -1,7 +1,9 @@
 import json
 
+from typing import Union, Optional
 from parsel import Selector
 
+from util.decorators import catch_exceptions
 from util.utils import clean_text
 from util.session import Session
 from util.selector import select as se
@@ -34,11 +36,13 @@ class RedditAPI(Session):
                     "upvotes": int(post.css(se['post_upvotes']).get('0')),
                     "content": clean_text(''.join(post.css(se['content']).extract() or [])) or None,
                     "timestamp": post.css(se['timestamp']).get('').split('.')[0] or None,
-                    "postLink": (se['api_address'] + post.css(se['post_link']).get('')) or None,
+                    "postLink": se['api_address'] + link if (link := post.css(se['post_link']).get()) else None,
                     "postImageLink": post.css(se['post_image_link']).get(),
+                    "postVideoLink": link + '/HLS_480.ts' if (link := post.css(se['post_image_link']).get()) else None,
                     "authorAvatarLink": post.css(se['icon']).get(),
-                } for post in select.css(se['post'])
-                if (author := post.css(se['post_author']).get('')) and 'automoderator' not in author.lower() or 'bot' not in author.lower()
+                }
+                for post in select.css(se['post'])
+                if (author := post.css(se['post_author']).get('')) and ('automoderator' not in author.lower() or 'bot' not in author.lower())
             ]
 
         posts: list = []
@@ -50,7 +54,7 @@ class RedditAPI(Session):
             self.logger.debug(f'no posts found for the selected subreddit')
             return page
 
-        self.logger.debug(f'scraping {posts_count} posts from subreddit {page[0]["subreddit"]}')
+        self.logger.info(f'scraping {posts_count} posts from subreddit {page[0]["subreddit"]}')
         posts.extend(page)
         for post in page: yield post
 
@@ -67,7 +71,7 @@ class RedditAPI(Session):
 
             for post in page: yield post
 
-        self.logger.debug(f'scraped and found {len(posts)} posts from subreddit {page[0]["subreddit"]}')
+        self.logger.info(f'scraped and found {len(posts)} posts from subreddit {page[0]["subreddit"]}')
 
     def get_user_info(self, user_name: str) -> dict:
         """ scraping a user information """
@@ -94,7 +98,7 @@ class RedditAPI(Session):
     def get_community_info(self, community_name: str) -> dict:
         """ scraping a subreddit information """
         if '/' in community_name: community_name = community_name.replace('/', ' ').strip().split(' ')[-1]
-        self.logger.debug(f'scraping all info from community: {community_name}')
+        self.logger.info(f'scraping all info from community: {community_name}')
 
         response = self.get(se['api_address'] + f'/r/{community_name.replace(" ", "")}/').text
         selector = Selector(text=response, type="html")
@@ -124,7 +128,7 @@ class RedditAPI(Session):
     def get_user_posts(self, user_name: str, posts_count: int = 100) -> list[dict]:
         """  scraping an amount of posts from a user """
         if '/' in user_name: user_name = user_name.split('/')[-1]
-        self.logger.debug(f'scraping {posts_count} from user: {user_name}')
+        self.logger.info(f'scraping {posts_count} from user: u/{user_name}')
 
         response: str = self.get(se['api_address'] + f'/user/{user_name}/submitted').text
         selector: Selector = Selector(text=response, type="html")
@@ -134,7 +138,7 @@ class RedditAPI(Session):
     def get_community_posts(self, community_name: str, posts_count: int = 100) -> list[dict]:
         """ scraping an amount of posts from a subreddit """
         if '/' in community_name: community_name = community_name.split('/')[-1]
-        self.logger.debug(f'scraping {posts_count} from subreddit: {community_name}')
+        self.logger.debug(f'scraping {posts_count} from subreddit: r/{community_name}')
 
         response: str = self.get(se['api_address'] + f'/r/{community_name}').text
         selector: Selector = Selector(text=response, type="html")
@@ -143,9 +147,24 @@ class RedditAPI(Session):
 
     def get_home_feed_posts(self, posts_count: int = 100) -> list[dict]:
         """ scraping an amount of posts from the homa page feed for browsing reddit normally """
-        self.logger.debug(f'scraping {posts_count} from the home feed')
+        self.logger.info(f'scraping {posts_count} from account home feed')
 
         response: str = self.get(se['api_address'] + '/?feed=home').text
         selector: Selector = Selector(text=response, type="html")
 
         yield from self.__get_posts(posts_count, selector)
+
+    @catch_exceptions
+    def download_media(self, media_link: str, filename: Optional[str] = None) -> Union[str, bool]:
+        if "http" not in media_link:
+            self.logger.error(f'url "{media_link}" is an invalid url')
+            return False
+
+        self.logger.info(f'downloading media from url: "{media_link}"')
+
+        file = open(f"{filename or media_link.split('?')[0].replace("/", " ").strip().split()[-1]}", 'wb')
+        for content in self.get(media_link).iter_content(1024 * 1024):
+            if content: file.write(content)
+
+        file.close()
+        return file.name
