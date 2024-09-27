@@ -1,54 +1,89 @@
-import random
+import os
+import time
+
+from abc import ABC, abstractmethod
+from typing import Union
 
 from pytwitter import Api as TwitterAPI
+from pytwitter.error import PyTwitterError
 
 from items import Post
+from util.decorators import catch_exceptions
 from logger.logger import Logger
-
-from typing import IO
-from abc import ABC, abstractmethod
 
 
 class Bot(ABC):
-    def __init__(self, logger_name: str, bearer_token: str):
-        self.api = TwitterAPI(bearer_token=bearer_token)
-        self.logger: Logger = Logger(logger_name)
+    def __init__(self, logger_name: str):
+        self.api = TwitterAPI(
+            consumer_key=os.environ['DAILY_COMIC_CONSUMER_KEY'],
+            consumer_secret=os.environ['DAILY_COMIC_CONSUMER_SECRET'],
+            access_token=os.environ['DAILY_COMIC_ACCESS_TOKEN'],
+            access_secret=os.environ['DAILY_COMIC_ACCESS_TOKEN_SECRET'],
+        )
 
+        self.logger: Logger = Logger(logger_name)
         self.logger.debug(f'{logger_name} initialized successfully')
 
-    def __upload_media(self, media_type: str, media_file_path: str):
+    @catch_exceptions
+    def __upload_media(self, api: TwitterAPI, media_type: str, media_file_path: str) -> str:
         """ post a tweet on X """
-        file: IO = open(media_file_path, 'rb')
+        file = open(media_file_path, 'rb')
+        file_size: int = file.seek(0, 2); file.seek(0)
 
-        response: dict = self.api.upload_media_chunked_init(
+        response: dict = api.upload_media_chunked_init(
             media_type=media_type,
-            total_bytes=file.seek(0, 2),
+            total_bytes=file_size,
             return_json=True
         )
 
-        print(response)  # TODO: Dont forget to test this, the response['media_id'] must be fixed
-        self.api.upload_media_chunked_append(
+        api.upload_media_chunked_append(
             media_id=response['media_id'],
-            segment_index=random.randint(0, 999),
+            segment_index=0,
             media=file
         )
 
+        api.upload_media_chunked_finalize(media_id=response['media_id_string'])
         file.close()
-        return self.api.upload_media_chunked_finalize(media_id=response['media_id'])
 
-    def tweet_image(self, media_file_path: str):
-        """ make an image post on X """
-        if media_file_path.split('.')[-1] not in ['jpg', 'jpeg']: return False
-        return self.__upload_media('image/jpeg', media_file_path)
+        starting_wait_time: float = time.time()
+        while time.time() - starting_wait_time <= response['expires_after_secs']:  # adding a safety timeout.
+            try:
+                time.sleep(5)
+                api.upload_media_chunked_status(media_id=response['media_id_string'])
+            except PyTwitterError:
+                self.logger.debug(f'successfully uploaded media with media_id: {response["media_id_string"]}')
+                return response['media_id_string']
 
-    def tweet_video(self, media_file_path):
-        """ make a video post on X """
-        return self.__upload_media('video/mp4', media_file_path)
-
-    def tweet_text(self, text_body: str):
+    @staticmethod
+    def tweet_text(api: TwitterAPI, text_body: str):
         """ make a text post on X """
-        return self.api.create_tweet(text=text_body)
+        return api.create_tweet(text=text_body)
+
+    def tweet_image(self, api, media_file_path: str):
+        """ make an image post on X """
+        if media_file_path.split('.')[-1] not in ['jpg', 'jpeg']:
+            self.logger.error(f'file type ".{media_file_path.split(".")[-1]}" is not supported only supported types are (".jpg", ".jpeg")')
+            return False
+        return self.__upload_media(api, 'image/jpeg', media_file_path)
+
+    def tweet_video(self, api, media_file_path):
+        """ make a video post on X """
+        if media_file_path.split('.')[-1] == 'mp4':
+            self.logger.error(f'file type ".{media_file_path.split(".")[-1]}" is not supported only supported types are (".mp4", )')
+            return False
+        return self.__upload_media(api, 'video/mp4', media_file_path)
+
+    @catch_exceptions
+    def tweet(self, api: TwitterAPI, media_id: str, post: Post) -> Union[dict, bool]:
+        """ post media on X """
+        if not media_id: self.logger.error(f'invalid media_id provided value: "{media_id}"'); return False
+        self.logger.info(f'tweeting with media_id: "{media_id}" on page username: "{post["bot_username"]}"')
+        return api.create_tweet(
+            text=post['body'],
+            media_media_ids=[str(media_id)],
+            return_json=True
+        )
 
     @abstractmethod
-    def tweet(self, post: Post) -> bool:
-        """ make a post on X """
+    def post(self, post: Post):
+        """ make a text post on X """

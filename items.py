@@ -1,3 +1,4 @@
+from datetime import datetime
 from dataclasses import dataclass
 from typing import Any
 
@@ -6,10 +7,10 @@ from typing import Any
 class Post:
     """ represents a profile. """
     index: int = None
-    post_type: str = None
+    post_type: str = None  # image, video, text
     body: str = None
     media_file_path: str = None
-    upload_date: str = None
+    upload_date: datetime = None
     bot_username: str = None
     __attrs__ = ["post_type", "body", "media_file_path", "upload_date", "bot_username"]
 

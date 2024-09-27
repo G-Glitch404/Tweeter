@@ -31,7 +31,7 @@ class Database(threading.Thread):
         :rtype: bool
         :return: True if inserted successfully False otherwise
         """
-        try: self.cursor.execute('INSERT INTO posts ([post_type], [body], [media_file_path], [upload_date], [bot_username]) VALUES (?, ?, ?, ?, ?)', record)
+        try: self.cursor.execute('INSERT INTO posts ([post_type], [text_body], [media_file_path], [upload_date], [bot_username]) VALUES (?, ?, ?, ?, ?)', record)
         except sqlite3.IntegrityError: return False
         else: self.conn.commit()
 
@@ -48,7 +48,7 @@ class Database(threading.Thread):
         :rtype: bool
         :return: True if inserted successfully False otherwise
         """
-        try: self.cursor.execute('INSERT INTO tweets ([post_type], [body], [media_file_path], [upload_date], [bot_username]) VALUES (?, ?, ?, ?, ?)', record)
+        try: self.cursor.execute('INSERT INTO tweets ([post_type], [text_body], [media_file_path], [upload_date], [bot_username]) VALUES (?, ?, ?, ?, ?)', record)
         except sqlite3.IntegrityError: return False
         else: self.conn.commit()
 

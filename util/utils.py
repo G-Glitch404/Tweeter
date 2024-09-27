@@ -33,5 +33,10 @@ def path(file_path: str, secondary_path: str = None) -> str:
 
 
 def get_filename(file_path: str) -> str:
-    """ gets the filename from a path """
-    return os.path.basename(file_path).split('.')[0]
+    """ returns the filename from a file path """
+    if "/" in file_path:
+        return file_path.split("/")[-1]
+    elif "\\" in file_path:
+        return file_path.split("\\")[-1]
+
+    return file_path
