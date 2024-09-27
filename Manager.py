@@ -34,7 +34,7 @@ def manager(account_username: str, post: Post) -> bool:
         logger.info(f'post index_id: "{post.index}" was successfully posted on page username "{account_username}" and deleted from database table "posts"')
         return True
 
-    logger.error(f'failed to post post index_id: "{post.index}" on page username "{account_username}"')
+    logger.error(f'failed to tweet post index_id: "{post.index}" on page username "{account_username}"')
     return False
 
 

@@ -172,11 +172,12 @@ class RedditAPI(Session):
 
 if __name__ == '__main__':
     import random
+    from util.utils import path
 
     crawler = RedditAPI()
 
     video = [item for item in crawler.get_community_posts('Unexpected', 1)]
     video = random.choice(video)
 
-    filename_ = crawler.download_media(video['postVideoLink'], 'test_video.mp4')
+    filename_ = crawler.download_media(video['postVideoLink'], path('media', 'test_video.mp4'))
     print(filename_)
