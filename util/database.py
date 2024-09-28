@@ -11,13 +11,13 @@ class Database(threading.Thread):
         self.conn = sqlite3.connect(database_filename, check_same_thread=False, timeout=120.0)
         self.cursor = self.conn.cursor()
 
-    def fetch_all(self) -> tuple:
+    def fetch_all(self, table_name: str = 'posts') -> tuple:
         """
         Fetch all data from table
 
         :yield: (id, profile) in a tuple
         """
-        for article in self.cursor.execute(f'SELECT * FROM posts;').fetchall():
+        for article in self.cursor.execute(f'SELECT * FROM {table_name};').fetchall():
             yield article
 
     @catch_exceptions
@@ -31,7 +31,7 @@ class Database(threading.Thread):
         :rtype: bool
         :return: True if inserted successfully False otherwise
         """
-        try: self.cursor.execute('INSERT INTO posts ([post_type], [text_body], [media_file_path], [upload_date], [bot_username]) VALUES (?, ?, ?, ?, ?)', record)
+        try: self.cursor.execute('INSERT INTO posts ([post_type], [text_body], [media_file_path], [upload_date], [bot_username]], [hash]) VALUES (?, ?, ?, ?, ?, ?)', record)
         except sqlite3.IntegrityError: return False
         else: self.conn.commit()
 
@@ -48,7 +48,7 @@ class Database(threading.Thread):
         :rtype: bool
         :return: True if inserted successfully False otherwise
         """
-        try: self.cursor.execute('INSERT INTO tweets ([post_type], [text_body], [media_file_path], [upload_date], [bot_username]) VALUES (?, ?, ?, ?, ?)', record)
+        try: self.cursor.execute('INSERT INTO tweets ([post_type], [text_body], [media_file_path], [upload_date], [bot_username], [hash]) VALUES (?, ?, ?, ?, ?, ?)', record)
         except sqlite3.IntegrityError: return False
         else: self.conn.commit()
 

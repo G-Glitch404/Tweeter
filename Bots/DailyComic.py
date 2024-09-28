@@ -35,7 +35,7 @@ class DailyComic(Bot):
 
     def post_text(self, post: Post):
         """ post a text """
-        self.logger.debug(f'posting a text to Twitter body: "{post.body}"')
+        self.logger.debug(f'posting a text to Twitter bot username: "{post.bot_username}"')
         return super().tweet_text(self.api, text_body=post.body)
 
     def post(self, post: Post) -> Union[dict, bool]:

@@ -17,7 +17,7 @@ select = {
     "content": 'div[data-post-click-location="text-body"] > div > p ::text',
     "timestamp": "::attr(created-timestamp)",
     "post_link": "::attr(permalink)",
-    "post_image_link": "::attr(content-href)",
+    "post_content_link": "::attr(content-href)",
     "icon": "::attr(icon)",
     "post": "article > shreddit-post[permalink]",
     "posts_cursor": "faceplate-partial[src][method] ::attr(src)",

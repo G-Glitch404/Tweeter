@@ -1,3 +1,4 @@
+import datetime
 import time
 
 from items import Post
@@ -19,7 +20,11 @@ def main() -> None:
         time.sleep(60)
         for post in db.fetch_all():
             if post[0] not in tuple(map(lambda x: x[-1], process_index)):
-                post = Post(post[0], post[1], post[2], post[3], post[4], post[5])
+                logger.info(f'processing and scheduling a post with index_id: "{post[0]}" for bot username "{post[1]}"')
+
+                if ':' not in post[4]: post[4] += ' 00:00:00'
+                post[4] = datetime.datetime.strptime(post[4], '%Y-%m-%d %H:%M:%S')
+                post = Post(*post)
 
                 process = Process(target=manager, args=(post.bot_username, post))
                 process.start()

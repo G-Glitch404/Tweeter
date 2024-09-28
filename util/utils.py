@@ -1,8 +1,8 @@
 import os
 import re
-import datetime as dt
+import subprocess
 
-load_date = lambda date: dt.datetime.strptime(date, "%Y-%m-%d %H:%M:%S")
+FFMPEG = "ffmpeg"  # change this for windows
 
 clean_text = lambda text: re.sub(
     '\n+|\\s+|\\t+|\\r+|\\r\\n+|\\r\\n',
@@ -10,10 +10,7 @@ clean_text = lambda text: re.sub(
     ''.join(text)
 ).strip()
 
-format_date = lambda date, formate: dt.datetime.strptime(
-    date,
-    formate,
-).strftime("%Y-%m-%d %H:%M:%S")
+convert_to_mp4 = lambda file_path: subprocess.run([FFMPEG, '-i', file_path, file_path.split('.')[0] + '.mp4'])
 
 
 def path(file_path: str, secondary_path: str = None) -> str:

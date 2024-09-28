@@ -4,7 +4,7 @@ from typing import Union, Optional
 from parsel import Selector
 
 from util.decorators import catch_exceptions
-from util.utils import clean_text
+from util.utils import clean_text, path
 from util.session import Session
 from util.selector import select as se
 from logger.logger import Logger
@@ -34,11 +34,12 @@ class RedditAPI(Session):
                     "postIndex": int(post.css(se['post_index']).get('0')),
                     "commentsCount": int(post.css(se['comments_count']).get('0')),
                     "upvotes": int(post.css(se['post_upvotes']).get('0')),
-                    "content": clean_text(''.join(post.css(se['content']).extract() or [])) or None,
+                    "body": clean_text(''.join(post.css(se['content']).extract() or [])) or None,
                     "timestamp": post.css(se['timestamp']).get('').split('.')[0] or None,
                     "postLink": se['api_address'] + link if (link := post.css(se['post_link']).get()) else None,
-                    "postImageLink": post.css(se['post_image_link']).get(),
-                    "postVideoLink": link + '/HLS_480.ts' if (link := post.css(se['post_image_link']).get()) else None,
+                    "postContentLink": post.css(se['post_content_link']).get() if post.css(se['post_type']).get() == "link" else None,
+                    "postImageLink": link if (link := post.css(se['post_content_link']).get()) and link.split('.')[-1] in ['jpeg', 'jpg'] else None,
+                    "postVideoLink": link + '/HLS_480.ts' if (link := post.css(se['post_content_link']).get()) and len(link) <= 20 else None,
                     "authorAvatarLink": post.css(se['icon']).get(),
                 }
                 for post in select.css(se['post'])
@@ -51,7 +52,7 @@ class RedditAPI(Session):
 
         page = scrape(selector)
         if len(page) <= 0:
-            self.logger.debug(f'no posts found for the selected subreddit')
+            self.logger.warning(f'no posts found for the selected subreddit')
             return page
 
         self.logger.info(f'scraping {posts_count} posts from subreddit {page[0]["subreddit"]}')
@@ -160,24 +161,22 @@ class RedditAPI(Session):
             self.logger.error(f'url "{media_link}" is an invalid url')
             return False
 
-        self.logger.info(f'downloading media from url: "{media_link}"')
+        self.logger.info(f'downloading media from url: "{media_link}" please standby this might take a few minutes...')
 
-        file = open(f"{filename or media_link.split('?')[0].replace("/", " ").strip().split()[-1]}", 'ab')
-        for content in self.get(media_link, stream=True).iter_content(1024*1024):
-            if content: file.write(content)
+        url_filename: str = media_link.split('?')[0].replace("/", " ").strip().split()[-1]
+        with open(f"{filename or path("media", url_filename)}", 'ab') as file:
+            content = self.get(media_link).content
+            file.write(content)
 
-        file.close()
         return file.name
 
 
 if __name__ == '__main__':
-    import random
-    from util.utils import path
+    # import random
 
     crawler = RedditAPI()
-
-    video = [item for item in crawler.get_community_posts('Unexpected', 1)]
-    video = random.choice(video)
-
-    filename_ = crawler.download_media(video['postVideoLink'], path('media', 'test_video.mp4'))
-    print(filename_)
+    video = [item for item in crawler.get_community_posts('NoahGetTheBoat', 100)]
+    for i in video: print(i)
+    # video = random.choice(video)
+    # filename_ = crawler.download_media(video['postVideoLink'], path('media', 'test_video.mp4'))
+    # print(filename_)

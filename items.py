@@ -12,7 +12,8 @@ class Post:
     media_file_path: str = None
     upload_date: datetime = None
     bot_username: str = None
-    __attrs__ = ["post_type", "body", "media_file_path", "upload_date", "bot_username"]
+    binary_hash: int = None
+    __attrs__ = ["post_type", "body", "media_file_path", "upload_date", "bot_username", 'binary_hash']
 
     def items(self) -> list[tuple]:
         """ returns all items in the object as a tuple. """

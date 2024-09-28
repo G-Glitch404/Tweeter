@@ -5,4 +5,5 @@ settings = {
     "LOGGING_LEVEL": logging.DEBUG,
     "PROXIES": None,
     "POSTS_DATABASE": path('.db', 'posts.db'),
+    "RECON_SUBREDDITS": ['NoahGetTheBoat'],
 }
