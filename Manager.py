@@ -1,12 +1,12 @@
 import time
 from datetime import datetime as dt
 
-from logger.logger import Logger
-from Exceptions import exceptions
 from items import Post
 from settings import settings
 from automated_users import automated_users
 from util.database import Database
+from Exceptions import exceptions
+from logger.logger import Logger
 from dotenv import load_dotenv
 
 load_dotenv()

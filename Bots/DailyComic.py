@@ -1,4 +1,6 @@
+import os
 from datetime import datetime as dt
+
 from Bots.Bot import Bot
 from items import Post
 from typing import Union
@@ -7,7 +9,13 @@ from util.utils import path, get_filename
 
 class DailyComic(Bot):
     def __init__(self) -> None:
-        super(DailyComic, self).__init__(logger_name='DailyComic')
+        super(DailyComic, self).__init__(
+            logger_name='DailyComic',
+            consumer_key=os.environ['DAILY_COMIC_CONSUMER_KEY'],
+            consumer_secret=os.environ['DAILY_COMIC_CONSUMER_SECRET'],
+            access_token=os.environ['DAILY_COMIC_ACCESS_TOKEN'],
+            access_secret=os.environ['DAILY_COMIC_ACCESS_TOKEN_SECRET'],
+        )
         if hasattr(self, 'tweet_image'): self.tweet_image = None
         if hasattr(self, 'tweet_video'): self.tweet_video = None
         if hasattr(self, 'tweet'): self.tweet = None

@@ -14,12 +14,19 @@ from logger.logger import Logger
 
 
 class Bot(ABC):
-    def __init__(self, logger_name: str):
+    def __init__(
+            self,
+            logger_name: str,
+            consumer_key: str,
+            consumer_secret: str,
+            access_token: str,
+            access_secret: str) -> None:
+        """ base bot class and functionality inherit this to create a new bot """
         self.api = TwitterAPI(
-            consumer_key=os.environ['DAILY_COMIC_CONSUMER_KEY'],
-            consumer_secret=os.environ['DAILY_COMIC_CONSUMER_SECRET'],
-            access_token=os.environ['DAILY_COMIC_ACCESS_TOKEN'],
-            access_secret=os.environ['DAILY_COMIC_ACCESS_TOKEN_SECRET'],
+            consumer_key=consumer_key,
+            consumer_secret=consumer_secret,
+            access_token=access_token,
+            access_secret=access_secret,
         )
 
         self.logger: Logger = Logger(logger_name)
