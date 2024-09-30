@@ -2,6 +2,7 @@ import json
 
 from typing import Union, Optional
 from parsel import Selector
+from requests import Response
 
 from util.decorators import catch_exceptions
 from util.utils import clean_text, path
@@ -164,19 +165,22 @@ class RedditAPI(Session):
         self.logger.info(f'downloading media from url: "{media_link}" please standby this might take a few minutes...')
 
         url_filename: str = media_link.split('?')[0].replace("/", " ").strip().split()[-1]
-        with open(f"{filename or path("media", url_filename)}", 'ab') as file:
-            content = self.get(media_link).content
+        with open(f"{filename or path("media", url_filename)}", 'wb') as file:
+            content: bytes = self.get(media_link, headers={
+                "Accept": "image/avif,image/webp,image/png,image/svg+xml,image/*;q=0.8,*/*;q=0.5",
+                "Accept-Encoding": "gzip, deflate, br, zstd",
+                "Accept-Language": "en-US,en;q=0.5"
+            }).content
             file.write(content)
 
         return file.name
 
 
 if __name__ == '__main__':
-    # import random
+    import random
 
     crawler = RedditAPI()
-    video = [item for item in crawler.get_community_posts('NoahGetTheBoat', 100)]
-    for i in video: print(i)
-    # video = random.choice(video)
-    # filename_ = crawler.download_media(video['postVideoLink'], path('media', 'test_video.mp4'))
-    # print(filename_)
+    videos = [item for item in crawler.get_community_posts('Unexpected', 10)]
+    video = random.choice(videos)
+    filename_ = crawler.download_media(video['postVideoLink'], path('media', 'test_video.mp4'))
+    print(filename_)
