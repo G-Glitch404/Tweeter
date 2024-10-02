@@ -1,6 +1,7 @@
 import os
 import re
 import subprocess
+from typing import Hashable
 
 FFMPEG = "ffmpeg"  # change this for windows
 
@@ -37,3 +38,18 @@ def get_filename(file_path: str) -> str:
         return file_path.split("\\")[-1]
 
     return file_path
+
+
+def fingerprint(obj: Hashable) -> str:
+    """
+    create an identifier for hashable objects by hashing them and getting their binary
+    used for creating unique identifiers so nothing gets duplicated
+
+    :param obj: the hashable object
+    :type obj: Hashable
+
+    :rtype: str
+    :return: the binary of the hash of the hashable object
+    """
+    if isinstance(obj, Hashable):
+        return bin(hash(obj))

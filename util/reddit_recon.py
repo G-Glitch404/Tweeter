@@ -61,11 +61,9 @@ def recon(subreddit: str, bot_username) -> None:
 
 
 if __name__ == '__main__':
-    # import time
+    import time
 
-    recon("mildlyinteresting", 'NewDayNewComic')
-
-    # while True:
-    #     for subreddit_ in settings['RECON_SUBREDDITS']:
-    #         recon(subreddit_, 'NewDayNewComic')
-    #     time.sleep(60*60)
+    while True:
+        for subreddit_ in settings['RECON_SUBREDDITS']:
+            recon(subreddit_, 'NewDayNewComic')
+        time.sleep(60*60)

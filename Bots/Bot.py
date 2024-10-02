@@ -1,7 +1,5 @@
-import os
 import time
 
-from abc import ABC, abstractmethod
 from typing import Union
 
 from pytwitter import Api as TwitterAPI
@@ -13,7 +11,7 @@ from util.decorators import catch_exceptions
 from logger.logger import Logger
 
 
-class Bot(ABC):
+class Bot:
     def __init__(
             self,
             logger_name: str,
@@ -78,35 +76,52 @@ class Bot(ABC):
         return False
 
     @staticmethod
-    def tweet_text(api: TwitterAPI, text_body: str):
+    def tweet_text(text_body: str):
         """ make a text post on X """
         return api.create_tweet(text=text_body)
 
-    def tweet_image(self, api, media_file_path: str):
+    def tweet_image(self, media_file_path: str):
         """ make an image post on X """
         if media_file_path.split('.')[-1] not in ['jpg', 'jpeg']:
             self.logger.error(f'file type ".{media_file_path.split(".")[-1]}" is not supported only supported types are (".jpg", ".jpeg")')
             return False
-        return self.__upload_media(api, 'image/jpeg', media_file_path)
+        return self.__upload_media('image/jpeg', media_file_path)
 
-    def tweet_video(self, api, media_file_path):
+    def tweet_video(self, media_file_path):
         """ make a video post on X """
         if not media_file_path.split('.')[-1] == 'mp4':
             self.logger.error(f'file type ".{media_file_path.split(".")[-1]}" is not supported only supported types are (".mp4", )')
             return False
-        return self.__upload_media(api, 'video/mp4', media_file_path)
 
-    @catch_exceptions
-    def tweet(self, api: TwitterAPI, media_id: str, post: Post) -> Union[dict, bool]:
+        return self.__upload_media('video/mp4', media_file_path)
+
+    def tweet(self, media_id: str, post: Post) -> Union[dict, bool]:
         """ post media on X """
         if not media_id: self.logger.error(f'invalid media_id provided value: "{media_id}"'); return False
         self.logger.info(f'tweeting with media_id: "{media_id}" on page username: "{post["bot_username"]}"')
-        return api.create_tweet(
+        return self.api.create_tweet(
             text=post['body'],
             media_media_ids=[str(media_id)],
             return_json=True
         )
 
-    @abstractmethod
+    @catch_exceptions
     def post(self, post: Post):
         """ make a text post on X """
+        if post.post_type == 'text':
+            self.tweet_text(post.body)
+            return True
+
+        elif post.post_type == 'image':
+            media_id: str = self.tweet_image(post.media_file_path)
+            self.tweet(media_id, post)
+            return True
+
+        elif post.post_type == 'video':
+            media_id: str = self.tweet_video(post.media_file_path)
+            self.tweet(media_id, post)
+            return True
+
+        else:
+            self.logger.error(f'post type "{post.post_type}" not supported')
+            return False

@@ -3,13 +3,25 @@ import threading
 
 from settings import settings
 from util.decorators import catch_exceptions
+from util.utils import path
 
 
 class Database(threading.Thread):
+    posts_table_file = path('.db', path('sql', 'posts.sql'))
+    tweets_table_file = path('.db', path('sql', 'tweets.sql'))
+
     def __init__(self, database_filename: str = settings["POSTS_DATABASE"]) -> None:
         super(Database, self).__init__()
         self.conn = sqlite3.connect(database_filename, check_same_thread=False, timeout=120.0)
         self.cursor = self.conn.cursor()
+
+        self.create_tables()
+
+    def create_tables(self) -> None:
+        """ Create tables in database """
+        self.cursor.execute(open(self.posts_table_file).read())
+        self.cursor.execute(open(self.tweets_table_file).read())
+        self.conn.commit()
 
     def fetch_all(self, table_name: str = 'posts') -> tuple:
         """
