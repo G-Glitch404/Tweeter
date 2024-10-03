@@ -142,7 +142,12 @@ class AutomatorApp(tk.Tk):
 
         input_frame.columnconfigure(1, weight=1)
 
-        submit_btn = ttk.Button(self.main_frame, text="Insert Post", style='TButton', command=lambda: self.insert_post(inputs))
+        submit_btn = ttk.Button(
+            self.main_frame,
+            text="Insert Post",
+            style='TButton',
+            command=lambda: self.insert_post(tuple(input_.get() for input_ in inputs))
+        )
         submit_btn.grid(row=2, column=0, columnspan=2, pady=10, sticky='ew', padx=20)
 
         back_btn = ttk.Button(self.main_frame, text="Back", style='TButton', command=self.create_main_window)
@@ -152,19 +157,21 @@ class AutomatorApp(tk.Tk):
         self.add_title_footer()
 
     @staticmethod
-    def insert_post(inputs: list):
+    def insert_post(inputs: tuple):
         database = Database(settings["POSTS_DATABASE"])
-        inputs: tuple = tuple(inputs + [fingerprint(tuple(inputs))])
+        inputs: tuple = tuple(list(inputs) + [fingerprint(inputs)])
+
+        logger.info(f"inserting schedule: {inputs}")
         database.insert_post(inputs)
 
     def start_auto_work(self):
         while not self.stop_auto_work:
-            for subreddit_ in settings['RECON_SUBREDDITS']:
-                recon(subreddit_, 'NewDayNewComic')
+            for subreddit_ in settings['RECON_SUBREDDITS']:        # TODO: make it stop in case of an invalid username
+                recon(subreddit_, 'NewDayNewComic')  # TODO: add bot username input or message box
             time.sleep(60 * 60)
 
     def database_status(self):
-        raise NotImplementedError("Not implemented yet")
+        ...
 
     def clear_frame(self):
         for widget in self.main_frame.winfo_children():

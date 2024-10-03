@@ -7,8 +7,9 @@ from util.utils import path
 
 
 class Database(threading.Thread):
-    posts_table_file = path('.db', path('sql', 'posts.sql'))
-    tweets_table_file = path('.db', path('sql', 'tweets.sql'))
+    tables_root: str = path('.db', 'sql')
+    posts_table_file: str = path(tables_root, 'posts.sql')
+    tweets_table_file: str = path(tables_root, 'tweets.sql')
 
     def __init__(self, database_filename: str = settings["POSTS_DATABASE"]) -> None:
         super(Database, self).__init__()
@@ -19,8 +20,8 @@ class Database(threading.Thread):
 
     def create_tables(self) -> None:
         """ Create tables in database """
-        self.cursor.execute(open(self.posts_table_file).read())
-        self.cursor.execute(open(self.tweets_table_file).read())
+        self.cursor.execute(open(self.posts_table_file, 'r').read())
+        self.cursor.execute(open(self.tweets_table_file, 'r').read())
         self.conn.commit()
 
     def fetch_all(self, table_name: str = 'posts') -> tuple:
@@ -43,7 +44,7 @@ class Database(threading.Thread):
         :rtype: bool
         :return: True if inserted successfully False otherwise
         """
-        try: self.cursor.execute('INSERT INTO posts ([post_type], [text_body], [media_file_path], [upload_date], [bot_username]], [hash]) VALUES (?, ?, ?, ?, ?, ?)', record)
+        try: self.cursor.execute('INSERT INTO posts ([post_type], [text_body], [media_file_path], [upload_date], [bot_username], [hash]) VALUES (?, ?, ?, ?, ?, ?)', record)
         except sqlite3.IntegrityError: return False
         else: self.conn.commit()
 

@@ -3,7 +3,6 @@ from datetime import datetime as dt
 
 from items import Post
 from settings import settings
-from automated_users import automated_users
 from logger.logger import Logger
 from util.database import Database
 from util.garbage_collector import tmp_recycler
@@ -18,7 +17,7 @@ db = Database(settings['POSTS_DATABASE'])
 
 
 def manager(account_username: str, post: Post) -> bool:
-    automated_user = automated_users.get(account_username)
+    automated_user = settings['AUTOMATED_USERS'].get(account_username)
     if not automated_user:
         logger.error(f'bot with username "{account_username}" not found')
         return False
