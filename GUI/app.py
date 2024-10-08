@@ -110,8 +110,8 @@ class AutomatorApp(tk.Tk):
         self.add_title_footer()
 
     def add_title_footer(self):
-        ttk.Label(self.main_frame, text="Hello, Mr. Glitch_404", font=self.font_hello).grid(row=4, column=0, columnspan=2, pady=(50, 10))
-        ttk.Label(self.main_frame, text="Made By Yousif Wael (Glitch_404)", font=self.font_hello).grid(row=5, column=0, columnspan=2)
+        ttk.Label(self.main_frame, text="Hello, Mr. Glitch_404", font=self.font_hello).grid(row=5, column=0, columnspan=2, pady=(50, 10))
+        ttk.Label(self.main_frame, text="Made By Yousif Wael (Glitch_404)", font=self.font_hello).grid(row=6, column=0, columnspan=2)
 
     def open_insert_window(self):
         self.clear_frame()
@@ -121,17 +121,16 @@ class AutomatorApp(tk.Tk):
         input_frame = ttk.Frame(self.main_frame)
         input_frame.grid(row=1, column=0, columnspan=2, pady=10)
 
-        labels = ["Type", "Body", "Date", "media path", "username"]
+        labels = ["type", "body", "date", "media path", "username"]
         inputs = []
 
         for i, label in enumerate(labels):
-            lbl = ttk.Label(input_frame, text=f"{label}:", font=self.font_default)
-            lbl.grid(row=i, column=0, sticky='e', padx=5, pady=5)
+            ttk.Label(input_frame, text=f"{label}: ".capitalize(), font=self.font_default).grid(row=i, column=0, sticky='e', padx=5, pady=5)
 
             match label:
-                case "Type": placeholder = "e.g. (text, image, video)"
-                case "Body": placeholder = "Post text"
-                case "Date": placeholder = "e.g. 2022-01-01 23:21:00"
+                case "type": placeholder = "e.g. (text, image, video)"
+                case "body": placeholder = "Post text"
+                case "date": placeholder = "e.g. 2022-01-01 23:21:00"
                 case "media path": placeholder = "e.g. media/test.jpg"
                 case "username": placeholder = "bot username"
                 case _: placeholder = label
@@ -156,6 +155,72 @@ class AutomatorApp(tk.Tk):
         # Recreate title and footer
         self.add_title_footer()
 
+    def start_auto_work(self):
+        def stop_auto_work():
+            self.stop_auto_work = True
+
+        def bot_username_entry():
+            return inputs[0]
+
+        def start():
+            submit_btn['text'] = 'Stop'
+            submit_btn['command'] = stop_auto_work
+            while not self.stop_auto_work:
+                for subreddit_ in settings['RECON_SUBREDDITS']:
+                    if not recon(subreddit_, bot_username_entry()):
+                        submit_btn['text'] = 'Start'
+                        submit_btn['command'] = self.start_auto_work
+                        return
+                time.sleep(60 * 60)
+
+        self.clear_frame()
+        ttk.Label(self.main_frame, text="Create/Start Bot", font=self.font_title).grid(row=0, column=0, columnspan=2, pady=40)
+        input_frame = ttk.Frame(self.main_frame)
+        buttons_frame = ttk.Frame(self.main_frame)
+
+        create_bot = ttk.Button(buttons_frame, text="Create New Bot", style='TButton', command=self.create_new_bot)
+        back_btn = ttk.Button(buttons_frame, text="Back", style='TButton', command=self.create_main_window)
+        submit_btn = ttk.Button(
+            buttons_frame,
+            text="Start",
+            style='TButton',
+            command=lambda: threading.Thread(target=start).start()
+        )
+
+        labels = ["username", "consumer key", "consumer secret", "access token", "access secret"]
+        inputs = []
+
+        for i, label in enumerate(labels):
+            ttk.Label(input_frame, text=f"{label}: ".capitalize(), font=self.font_default).grid(row=i, column=0, sticky='e', padx=5, pady=5)
+
+            match label:
+                case "username": placeholder = "enter bot username"
+                case "consumer key": placeholder = "enter consumer key"
+                case "consumer secret": placeholder = "enter consumer secret"
+                case "access token": placeholder = "enter access token"
+                case "access secret": placeholder = "enter access secret"
+                case _: placeholder = label
+
+            entry = PlaceholderEntry(input_frame, font=self.placeholder_font, placeholder=placeholder)
+            entry.grid(row=i, column=1, padx=5, pady=5, sticky='we')
+            inputs.append(entry)
+
+        input_frame.columnconfigure(1, weight=1)
+        buttons_frame.columnconfigure(1, weight=1)
+
+        input_frame.grid(row=1, column=0, columnspan=2, pady=15)
+        buttons_frame.grid(row=2, column=0, columnspan=2, pady=15)
+
+        create_bot.grid(row=0, column=0, columnspan=1, pady=5, sticky='ew', padx=10, ipadx=65)
+        submit_btn.grid(row=1, column=0, columnspan=1, pady=5, sticky='ew', padx=10, ipadx=65)
+        back_btn.grid(row=2, column=0, columnspan=1, pady=5, sticky='ew', padx=10, ipadx=65)
+
+        # Recreate title and footer
+        self.add_title_footer()
+
+    def create_new_bot(self):
+        pass
+
     @staticmethod
     def insert_post(inputs: tuple):
         database = Database(settings["POSTS_DATABASE"])
@@ -163,12 +228,6 @@ class AutomatorApp(tk.Tk):
 
         logger.info(f"inserting schedule: {inputs}")
         database.insert_post(inputs)
-
-    def start_auto_work(self):
-        while not self.stop_auto_work:
-            for subreddit_ in settings['RECON_SUBREDDITS']:        # TODO: make it stop in case of an invalid username
-                recon(subreddit_, 'NewDayNewComic')  # TODO: add bot username input or message box
-            time.sleep(60 * 60)
 
     def database_status(self):
         ...
