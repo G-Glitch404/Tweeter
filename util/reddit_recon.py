@@ -15,7 +15,7 @@ load_dotenv()
 
 
 @catch_exceptions
-def recon(subreddit: str, bot_username) -> None:
+def recon(subreddit: str, bot_username) -> Process:
     last_post_datetime: datetime = datetime.now()  # only declared once
     logger: Logger = Logger('RedditRecon')
     db: Database = Database(settings['POSTS_DATABASE'])
@@ -32,7 +32,6 @@ def recon(subreddit: str, bot_username) -> None:
             db_post: list = [post["postIndex"], "video", post["title"] or post["body"], media_path, None, bot_username]
 
         elif post["postType"] == "image" and post["postImageLink"]:
-            print(post["postImageLink"])
             media_path: str = reddit.download_media(post["postImageLink"])
             db_post: list = [post["postIndex"], "image", post["title"] or post["body"], media_path, None, bot_username]
 
@@ -56,7 +55,9 @@ def recon(subreddit: str, bot_username) -> None:
 
         db_post: Post = Post(*db_post)
         logger.info(f'found a new post in subreddit "{subreddit}" link: "{post['postLink']}" scheduling it for upload')
-        Process(target=manager, args=(db_post.bot_username, db_post)).start()
+        process: Process = Process(target=manager, args=(db_post.bot_username, db_post))
+        process.start()
+        return process
 
 
 if __name__ == '__main__':

@@ -53,8 +53,8 @@ class AutomatorApp(tk.Tk):
         self.title("Automated xTwitter Accounts manager")
         self.geometry("480x800")
 
-        self.status_labels = []
-        self.stop_auto_work = False
+        self.status_labels: list[ttk.Label] = []
+        self.stop_auto_work: tuple = ('', False)
 
         # Fonts and styles
         self.font_title: font.Font = font.Font(family="Cairo", size=18, weight="bold")
@@ -163,27 +163,28 @@ class AutomatorApp(tk.Tk):
 
     def start_auto_work(self):
         def stop_auto_work():
-            self.stop_auto_work = True
+            self.stop_auto_work = (bot_username_entry(), True)
 
         def bot_username_entry():
-            return inputs[0]
+            return inputs[0].get()
 
-        def start():
+        def start(subreddit_name: str):
             submit_btn['text'] = 'Stop'
             submit_btn['command'] = stop_auto_work
-            while not self.stop_auto_work:
-                for subreddit_ in settings['RECON_SUBREDDITS']:
-                    if not recon(subreddit_, bot_username_entry()):
-                        submit_btn['text'] = 'Start'
-                        submit_btn['command'] = self.start_auto_work
-                        return
+            while not self.stop_auto_work[-1] and self.stop_auto_work[0] != bot_username_entry():
+                process = recon(subreddit_name, bot_username_entry())  # TODO: add exception handling, logic is broken
+                if not process.is_alive():
+                    submit_btn['text'] = 'Start'
+                    submit_btn['command'] = self.start_auto_work
+                    return
                 time.sleep(60 * 60)
 
         self.clear_frame()
         ttk.Label(self.main_frame, text="Create/Start Bot", font=self.font_title).grid(row=0, column=0, columnspan=2, pady=40)
+
         input_frame: ttk.Frame = ttk.Frame(self.main_frame)
         buttons_frame: ttk.Frame = ttk.Frame(self.main_frame)
-        labels: list = ["username", "consumer key", "consumer secret", "access token", "access secret"]
+        labels: list = ["username", "subreddit", "consumer key", "consumer secret", "access token", "access secret"]
         inputs: list[PlaceholderEntry] = []
 
         create_bot = ttk.Button(buttons_frame, text="Create New Bot", style='TButton', command=lambda: self.create_new_bot({k: v for k, v in zip(labels, inputs)}))
@@ -192,18 +193,19 @@ class AutomatorApp(tk.Tk):
             buttons_frame,
             text="Start",
             style='TButton',
-            command=lambda: threading.Thread(target=start).start()
+            command=lambda: threading.Thread(target=start, args=(inputs[1].get())).start()
         )
 
         for i, label in enumerate(labels):
             ttk.Label(input_frame, text=f"{label}: ".capitalize(), font=self.font_default).grid(row=i, column=0, sticky='e', padx=5, pady=5)
 
             match label:
-                case "username": placeholder = "enter bot username"
-                case "consumer key": placeholder = "enter consumer key"
-                case "consumer secret": placeholder = "enter consumer secret"
-                case "access token": placeholder = "enter access token"
-                case "access secret": placeholder = "enter access secret"
+                case "username": placeholder = "enter X bot username"
+                case "subreddit": placeholder = "subreddit for auto-work"
+                case "consumer key": placeholder = "enter X consumer key"
+                case "consumer secret": placeholder = "enter X consumer secret"
+                case "access token": placeholder = "enter X access token"
+                case "access secret": placeholder = "enter X access secret"
                 case _: placeholder = label
 
             entry = PlaceholderEntry(input_frame, font=self.placeholder_font, placeholder=placeholder)
