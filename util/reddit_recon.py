@@ -12,15 +12,14 @@ from Crawlers.RedditCrawler import RedditAPI
 from dotenv import load_dotenv
 
 load_dotenv()
-last_post_datetime: datetime = datetime.now()  # only declared once
-logger = Logger('RedditRecon')
-db = Database(settings['POSTS_DATABASE'])
-reddit = RedditAPI()
 
 
 @catch_exceptions
 def recon(subreddit: str, bot_username) -> None:
-    global last_post_datetime
+    last_post_datetime: datetime = datetime.now()  # only declared once
+    logger: Logger = Logger('RedditRecon')
+    db: Database = Database(settings['POSTS_DATABASE'])
+    reddit: RedditAPI = RedditAPI()
 
     logger.info(f'scanning subreddit: {subreddit} for any new posts')
     for post in reddit.get_community_posts(subreddit, posts_count=5):

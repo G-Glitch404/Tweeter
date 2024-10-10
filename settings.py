@@ -6,5 +6,4 @@ settings = {
     "PROXIES": None,
     "POSTS_DATABASE": path('.db', 'posts.db'),
     "RECON_SUBREDDITS": ['NoahGetTheBoat'],
-    "AUTOMATED_USERS": {'DailyComic': "DailyComic.ini"}
 }

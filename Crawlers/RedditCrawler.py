@@ -2,7 +2,6 @@ import json
 
 from typing import Union, Optional
 from parsel import Selector
-from requests import Response
 
 from util.decorators import catch_exceptions
 from util.utils import clean_text, path

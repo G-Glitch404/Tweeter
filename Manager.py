@@ -3,10 +3,12 @@ from datetime import datetime as dt
 
 from items import Post
 from settings import settings
+from Bots.Bot import Bot
 from logger.logger import Logger
 from util.database import Database
 from util.garbage_collector import tmp_recycler
 from util.utils import convert_to_mp4, get_filename
+from util.utils import get_available_bots
 
 from pytwitter.error import PyTwitterError
 from dotenv import load_dotenv
@@ -17,11 +19,6 @@ db = Database(settings['POSTS_DATABASE'])
 
 
 def manager(account_username: str, post: Post) -> bool:
-    automated_user = settings['AUTOMATED_USERS'].get(account_username)
-    if not automated_user:
-        logger.error(f'bot with username "{account_username}" not found')
-        return False
-
     total_minutes = round((post.upload_date - dt.now()).total_seconds() / 60)
 
     logger.info(f'scheduling a tweet to post to username "{account_username}" after {f"{total_minutes} minutes" if total_minutes < 60 else f"{total_minutes/60} hours"}')
@@ -33,7 +30,21 @@ def manager(account_username: str, post: Post) -> bool:
             post.media_file_path = convert_to_mp4(post.media_file_path)
 
     logger.info(f'making a post with bot username: "{account_username}"')
-    automated_user = automated_user()
+
+    account_info: dict = {}
+    account_username: str = ''
+    for i in get_available_bots():
+        account: dict = list(i.items())[0]
+        username: str = account[0]
+        if "Glitch404" == username:
+            account_username: str = account[0]
+            account_info: dict = account[-1]
+
+    if not account_username:
+        logger.error(f'no available bots found with username: "{account_username}"')
+        return False
+
+    automated_user = Bot(logger_name=account_username, **account_info)
     try: uploaded_post = automated_user.post(post)
     except PyTwitterError as e:
         logger.error(f'failed to make a post on page username: "{account_username}" error: "{e}"')

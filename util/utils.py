@@ -1,6 +1,7 @@
 import os
 import re
 import subprocess
+import configparser
 from typing import Hashable
 
 FFMPEG = "ffmpeg"  # change this for windows
@@ -53,3 +54,32 @@ def fingerprint(obj: Hashable) -> str:
     """
     if isinstance(obj, Hashable):
         return bin(hash(obj))
+
+
+def add_new_bot(username: str, consumer_key: str, consumer_secret: str, access_token: str, access_secret: str) -> None:
+    """ adds a new bot to the system """
+    bots_ini = configparser.ConfigParser()
+    bots_ini_filepath: str = path('Bots', 'bots.ini')
+
+    bots_ini.read(bots_ini_filepath, 'utf-8')
+    bots_ini.add_section(username)
+
+    bots_ini[username]['consumer_key'] = consumer_key
+    bots_ini[username]['consumer_secret'] = consumer_secret
+    bots_ini[username]['access_token'] = access_token
+    bots_ini[username]['access_secret'] = access_secret
+
+    with open(bots_ini_filepath, 'w') as configfile:
+        bots_ini.write(configfile)
+
+
+def get_available_bots() -> dict[str, dict[str, str]]:
+    """ adds a new bot to the system """
+    bots_ini = configparser.ConfigParser()
+    bots_ini_filepath: str = path('Bots', 'bots.ini')
+
+    bots_ini.read(bots_ini_filepath)
+
+    for bot in bots_ini.sections():
+        if not bot: continue
+        yield {bot: {k: v for k, v in bots_ini.items(bot)}}

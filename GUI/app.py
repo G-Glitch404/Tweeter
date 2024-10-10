@@ -7,7 +7,7 @@ from tkinter import font
 
 from util.reddit_recon import recon
 from util.database import Database
-from util.utils import fingerprint
+from util.utils import fingerprint, add_new_bot
 from settings import settings
 from logger.logger import Logger
 
@@ -35,6 +35,11 @@ class PlaceholderEntry(ttk.Entry):
             self.insert(0, self.placeholder)
             self.configure(foreground=self.placeholder_color)
 
+    def set_placeholder(self, *args):
+        if self.get() == "":
+            self.insert(0, self.placeholder)
+            self.configure(foreground=self.placeholder_color)
+
     def clear_placeholder(self, *args):
         if self.get() == self.placeholder:
             self.delete(0, tk.END)
@@ -56,6 +61,7 @@ class AutomatorApp(tk.Tk):
         self.font_default: font.Font = font.Font(family="Cairo", size=16)
         self.font_hello: font.Font = font.Font(family="Cairo", size=10)
         self.placeholder_font: font.Font = font.Font(family="Cairo", size=14)
+        self.error_font: font.Font = font.Font(family="Cairo", size=10, weight="bold")
 
         # Color settings
         self.text_color: str = '#f0e1e7'
@@ -175,10 +181,12 @@ class AutomatorApp(tk.Tk):
 
         self.clear_frame()
         ttk.Label(self.main_frame, text="Create/Start Bot", font=self.font_title).grid(row=0, column=0, columnspan=2, pady=40)
-        input_frame = ttk.Frame(self.main_frame)
-        buttons_frame = ttk.Frame(self.main_frame)
+        input_frame: ttk.Frame = ttk.Frame(self.main_frame)
+        buttons_frame: ttk.Frame = ttk.Frame(self.main_frame)
+        labels: list = ["username", "consumer key", "consumer secret", "access token", "access secret"]
+        inputs: list[PlaceholderEntry] = []
 
-        create_bot = ttk.Button(buttons_frame, text="Create New Bot", style='TButton', command=self.create_new_bot)
+        create_bot = ttk.Button(buttons_frame, text="Create New Bot", style='TButton', command=lambda: self.create_new_bot({k: v for k, v in zip(labels, inputs)}))
         back_btn = ttk.Button(buttons_frame, text="Back", style='TButton', command=self.create_main_window)
         submit_btn = ttk.Button(
             buttons_frame,
@@ -186,9 +194,6 @@ class AutomatorApp(tk.Tk):
             style='TButton',
             command=lambda: threading.Thread(target=start).start()
         )
-
-        labels = ["username", "consumer key", "consumer secret", "access token", "access secret"]
-        inputs = []
 
         for i, label in enumerate(labels):
             ttk.Label(input_frame, text=f"{label}: ".capitalize(), font=self.font_default).grid(row=i, column=0, sticky='e', padx=5, pady=5)
@@ -218,8 +223,22 @@ class AutomatorApp(tk.Tk):
         # Recreate title and footer
         self.add_title_footer()
 
-    def create_new_bot(self):
-        pass
+    def create_new_bot(self, entries: dict[str, ...]):
+        def error():
+            error_label: ttk.Label = ttk.Label(self.main_frame, text="Please fill all keys entries", font=self.error_font, foreground="red")
+            error_label.grid(row=3, column=0, columnspan=2, pady=10)
+            time.sleep(3)
+            error_label.destroy()
+
+        entries_text: list = []
+        for k, v in entries.items():
+            v.clear_placeholder()
+            entry_text: str = v.get()
+            v.set_placeholder()
+            if entry_text: entries_text.append(entry_text)
+            else: threading.Thread(target=error).start(); return
+
+        add_new_bot(*entries_text)
 
     @staticmethod
     def insert_post(inputs: tuple):
