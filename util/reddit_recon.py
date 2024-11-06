@@ -55,8 +55,10 @@ def recon(subreddit: str, bot_username) -> Process:
 
         db_post: Post = Post(*db_post)
         logger.info(f'found a new post in subreddit "{subreddit}" link: "{post['postLink']}" scheduling it for upload')
+
         process: Process = Process(target=manager, args=(db_post.bot_username, db_post))
         process.start()
+
         return process
 
 

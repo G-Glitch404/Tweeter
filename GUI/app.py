@@ -172,12 +172,13 @@ class AutomatorApp(tk.Tk):
             submit_btn['text'] = 'Stop'
             submit_btn['command'] = stop_auto_work
             while not self.stop_auto_work[-1] and self.stop_auto_work[0] != bot_username_entry():
-                process = recon(subreddit_name, bot_username_entry())  # TODO: add exception handling, logic is broken
+                process = recon(subreddit_name, bot_username_entry())  # TODO: logic is broken
                 if not process.is_alive():
                     submit_btn['text'] = 'Start'
                     submit_btn['command'] = self.start_auto_work
                     return
-                time.sleep(60 * 60)
+
+                time.sleep(5)
 
         self.clear_frame()
         ttk.Label(self.main_frame, text="Create/Start Bot", font=self.font_title).grid(row=0, column=0, columnspan=2, pady=40)

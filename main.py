@@ -17,7 +17,6 @@ db = Database(settings['POSTS_DATABASE'])
 def main() -> None:
     process_index: list[tuple] = []
     while True:
-        time.sleep(60)
         for post in db.fetch_all():
             if post[0] not in tuple(map(lambda x: x[-1], process_index)):
                 logger.info(f'processing and scheduling a post with index_id: "{post[0]}" for bot username "{post[1]}"')
@@ -34,6 +33,8 @@ def main() -> None:
         for process, index in process_index:
             if not process.is_alive():
                 process_index.pop(process_index.index((process, index)))
+
+        time.sleep(60)
 
 
 if __name__ == '__main__':

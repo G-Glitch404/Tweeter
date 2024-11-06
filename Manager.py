@@ -1,12 +1,16 @@
-import time
+import threading
 from datetime import datetime as dt
+from typing import Union
 
 from items import Post
 from settings import settings
 from Bots.Bot import Bot
 from logger.logger import Logger
+from GUI.error_dialog import ErrorDialogUI
+
 from util.database import Database
 from util.garbage_collector import tmp_recycler
+from util.decorators import catch_exceptions
 from util.utils import convert_to_mp4, get_filename
 from util.utils import get_available_bots
 
@@ -18,48 +22,59 @@ logger = Logger('BotsManager')
 db = Database(settings['POSTS_DATABASE'])
 
 
-def manager(account_username: str, post: Post) -> bool:
-    total_minutes = round((post.upload_date - dt.now()).total_seconds() / 60)
+@catch_exceptions
+def manager(account_username: str, post: Post) -> Union[threading.Timer, bool]:
+    def upload_post(bot_username, _post: Post, **bot_account_info):
+        logger.info(f'making a post with bot username: "{account_username}"')
 
-    logger.info(f'scheduling a tweet to post to username "{account_username}" after {f"{total_minutes} minutes" if total_minutes < 60 else f"{total_minutes/60} hours"}')
-    time.sleep(total_minutes * 60)
+        automated_user = Bot(logger_name=bot_username, **bot_account_info)
+        try: uploaded_post = automated_user.post(_post)
+        except PyTwitterError as e:
+            err_: str = f'failed to make a post on page username: "{bot_username}" error: "{e}"'
+            logger.error(err_)
+            ErrorDialogUI(err_)
+            return False
+
+        if uploaded_post:
+            db.insert_tweet(tuple(value[-1] for value in _post.items()))
+            db.delete_record(_post.index, 'posts')
+
+            logger.info(f'post index_id: "{_post.index}" was successfully posted on page username "{bot_username}" and deleted from database table "posts"')
+            if _post.media_file_path: tmp_recycler(_post.media_file_path)
+            return True
+
+        err_: str = f'failed to tweet post index_id: "{_post.index}" on page username "{bot_username}"'
+        logger.error(err_)
+        ErrorDialogUI(err_)
+
+        return False
 
     if post.post_type == 'video':
         if post.media_file_path.split('.')[0] != '.mp4':
             logger.debug(f'converting video file: "{get_filename(post.media_file_path)}" to mp4 extension')
             post.media_file_path = convert_to_mp4(post.media_file_path)
 
-    logger.info(f'making a post with bot username: "{account_username}"')
-
     account_info: dict = {}
-    account_username: str = ''
-    for i in get_available_bots():
-        account: dict = list(i.items())[0]
-        username: str = account[0]
-        if "Glitch404" == username:
+    username: str = ''
+    for _, v in get_available_bots():
+        account: dict = list(v.items())[0]
+        if account[0] == username:
             account_username: str = account[0]
             account_info: dict = account[-1]
+            break
 
-    if not account_username:
-        logger.error(f'no available bots found with username: "{account_username}"')
+    if not username or not account_info:
+        err: str = f'no available bots found with username: "{account_username}"'
+        logger.error(err)
+        ErrorDialogUI(err + ' maybe corrupted files found, please re/create the bot first')
         return False
 
-    automated_user = Bot(logger_name=account_username, **account_info)
-    try: uploaded_post = automated_user.post(post)
-    except PyTwitterError as e:
-        logger.error(f'failed to make a post on page username: "{account_username}" error: "{e}"')
-        return False
+    total_minutes: int = round((post.upload_date - dt.now()).total_seconds() / 60)
+    logger.info(f'scheduling a tweet to post to username "{account_username}" after {f"{total_minutes} minutes" if total_minutes < 60 else f"{total_minutes/60} hours"}')
+    thread = threading.Timer(total_minutes * 60, lambda: upload_post(account_username, post, **account_info))
+    thread.start()
 
-    if uploaded_post:
-        db.insert_tweet(tuple(value[-1] for value in post.items()))
-        db.delete_record(post.index, 'posts')
-
-        logger.info(f'post index_id: "{post.index}" was successfully posted on page username "{account_username}" and deleted from database table "posts"')
-        if post.media_file_path: tmp_recycler(post.media_file_path)
-        return True
-
-    logger.error(f'failed to tweet post index_id: "{post.index}" on page username "{account_username}"')
-    return False
+    return thread
 
 
 if __name__ == '__main__':

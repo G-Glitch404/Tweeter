@@ -73,7 +73,7 @@ def add_new_bot(username: str, consumer_key: str, consumer_secret: str, access_t
         bots_ini.write(configfile)
 
 
-def get_available_bots() -> dict[str, dict[str, str]]:
+def get_available_bots() -> dict[str, dict]:
     """ adds a new bot to the system """
     bots_ini = configparser.ConfigParser()
     bots_ini_filepath: str = path('Bots', 'bots.ini')
