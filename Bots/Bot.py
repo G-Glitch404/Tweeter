@@ -31,12 +31,12 @@ class Bot:
         self.logger.debug(f'{logger_name} initialized successfully')
 
     @catch_exceptions
-    def __upload_media(self, api: TwitterAPI, media_type: str, media_file_path: str) -> Union[bool, str]:
+    def __upload_media(self, media_type: str, media_file_path: str) -> Union[bool, str]:
         """ post a tweet on X """
         file = open(media_file_path, 'rb')
         file_size: int = file.seek(0, 2); file.seek(0)
 
-        response: dict = api.upload_media_chunked_init(
+        response: dict = self.api.upload_media_chunked_init(
             media_type=media_type,
             media_category='tweet_video' if media_type == 'video/mp4' else None,
             total_bytes=file_size,
@@ -47,18 +47,18 @@ class Bot:
             self.logger.error(f'failed to upload media with media_type: "{media_type}" and media_file_path: "{media_file_path}"')
             return False
 
-        api.upload_media_chunked_append(
+        self.api.upload_media_chunked_append(
             media_id=response['media_id'],
             segment_index=0,
             media=file
         )
 
-        api.upload_media_chunked_finalize(media_id=response['media_id_string'])
+        self.api.upload_media_chunked_finalize(media_id=response['media_id_string'])
         file.close()
 
         starting_wait_time: float = time.time()
         while time.time() - starting_wait_time <= 120:  # adding a safety 2 minutes timeout.
-            try: upload_status: MediaUploadResponse = api.upload_media_chunked_status(media_id=response['media_id_string'])
+            try: upload_status: MediaUploadResponse = self.api.upload_media_chunked_status(media_id=response['media_id_string'])
             except PyTwitterError:
                 self.logger.warning('error while uploading media - media might be uploaded, check before trying again')
                 return response['media_id_string']
@@ -75,10 +75,9 @@ class Bot:
         self.logger.error(f'failed to upload media with media_type: "{media_type}" and media_file_path: "{media_file_path}" reason timeout reached.')
         return False
 
-    @staticmethod
-    def tweet_text(text_body: str):
+    def tweet_text(self, text_body: str):
         """ make a text post on X """
-        return api.create_tweet(text=text_body)
+        return self.api.create_tweet(text=text_body)
 
     def tweet_image(self, media_file_path: str):
         """ make an image post on X """

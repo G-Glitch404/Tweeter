@@ -3,12 +3,12 @@ from datetime import datetime, timedelta
 
 from util.database import Database
 from util.decorators import catch_exceptions
+from util.utils import status_manager
 from items import Post
 from Manager import manager
 from settings import settings
 from logger.logger import Logger
 from Crawlers.RedditCrawler import RedditAPI
-
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -23,7 +23,7 @@ def recon(subreddit: str, bot_username) -> Process:
 
     logger.info(f'scanning subreddit: {subreddit} for any new posts')
     for post in reddit.get_community_posts(subreddit, posts_count=5):
-        if post and post["upvotes"] < 100 or post["postNsfw"]: continue
+        if not post or (post["upvotes"] < 100 or post["postNsfw"]): continue
 
         last_post_datetime += timedelta(minutes=30)
         post["postType"] = post["postType"].lower().replace(' ', '')
@@ -50,8 +50,7 @@ def recon(subreddit: str, bot_username) -> Process:
         db_post += [bin(hash(tuple(db_post))), ]
         db_post[4] = last_post_datetime  # adding the upload_time here, so it doesn't change the value hash from db hash
         if not db.insert_tweet(db_post[1:]):
-            logger.warning(f'post with link "{post['postLink']}" is a duplicate, skipping it.')
-            continue
+            logger.warning(f'post with link "{post['postLink']}" is a duplicate, skipping it.'); continue
 
         db_post: Post = Post(*db_post)
         logger.info(f'found a new post in subreddit "{subreddit}" link: "{post['postLink']}" scheduling it for upload')

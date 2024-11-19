@@ -4,7 +4,7 @@ import tkinter as tk
 class ErrorDialogUI(tk.Tk):
     def __init__(self, error_message: str = None, master=None, **kw):
         super().__init__(master, **kw)
-
+        self.title("Error")
         self.error_message = tk.Message(self, name="error_message")
         self.error_message.configure(
             background="#a91651",
@@ -47,4 +47,18 @@ class ErrorDialogUI(tk.Tk):
         self.pack_propagate(False)
         self.protocol("WM_DELETE_WINDOW", self.destroy)
 
+        self.center_window()
         self.mainloop()
+
+    def center_window(self):
+        self.update_idletasks()
+        width = self.winfo_width()
+        height = self.winfo_height()
+        x = (self.winfo_screenwidth() // 2) - (width // 2)
+        y = (self.winfo_screenheight() // 2) - (height // 2)
+        self.geometry(f'+{x}+{y}')
+        self.deiconify()
+
+
+if __name__ == "__main__":
+    ErrorDialogUI("test text")

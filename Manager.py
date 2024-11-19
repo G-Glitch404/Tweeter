@@ -11,8 +11,7 @@ from GUI.error_dialog import ErrorDialogUI
 from util.database import Database
 from util.garbage_collector import tmp_recycler
 from util.decorators import catch_exceptions
-from util.utils import convert_to_mp4, get_filename
-from util.utils import get_available_bots
+from util.utils import convert_to_mp4, get_filename, get_available_bots, status_manager
 
 from pytwitter.error import PyTwitterError
 from dotenv import load_dotenv
@@ -28,16 +27,19 @@ def manager(account_username: str, post: Post) -> Union[threading.Timer, bool]:
         logger.info(f'making a post with bot username: "{account_username}"')
 
         automated_user = Bot(logger_name=bot_username, **bot_account_info)
-        try: uploaded_post = automated_user.post(_post)
+        try:
+            uploaded_post = automated_user.post(_post)
         except PyTwitterError as e:
             err_: str = f'failed to make a post on page username: "{bot_username}" error: "{e}"'
             logger.error(err_)
             ErrorDialogUI(err_)
+            status_manager(False, failed=1)
             return False
 
         if uploaded_post:
             db.insert_tweet(tuple(value[-1] for value in _post.items()))
             db.delete_record(_post.index, 'posts')
+            status_manager(False, uploaded=1)
 
             logger.info(f'post index_id: "{_post.index}" was successfully posted on page username "{bot_username}" and deleted from database table "posts"')
             if _post.media_file_path: tmp_recycler(_post.media_file_path)
@@ -46,6 +48,7 @@ def manager(account_username: str, post: Post) -> Union[threading.Timer, bool]:
         err_: str = f'failed to tweet post index_id: "{_post.index}" on page username "{bot_username}"'
         logger.error(err_)
         ErrorDialogUI(err_)
+        status_manager(False, failed=1)
 
         return False
 
