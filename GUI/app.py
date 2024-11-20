@@ -5,9 +5,10 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import font
 
+from GUI.error_dialog import ErrorDialogUI
 from util.reddit_recon import recon
 from util.database import Database
-from util.utils import fingerprint, add_new_bot, remove_bot, status_manager
+from util.utils import fingerprint, add_new_bot, remove_bot, get_available_bots, status_manager
 from settings import settings
 from logger.logger import Logger
 
@@ -64,7 +65,7 @@ class AutomatorApp(tk.Tk):
         self.geometry("480x800")
 
         self.status_labels: list[ttk.Label] = []
-        self.stop_auto_work: tuple = ('', False)
+        self.stop: tuple = ('', False)
         self.active_bots: list[str] = []
 
         # fonts and styles
@@ -122,6 +123,7 @@ class AutomatorApp(tk.Tk):
 
         ttk.Button(button_frame, text="Manual Scheduling", style='TButton', command=self.open_insert_window).pack(pady=10, fill='x', padx=10)
         ttk.Button(button_frame, text="Auto Reddit to Twitter", style='TButton', command=self.start_auto_work).pack(pady=10, fill='x', padx=10)
+        ttk.Button(button_frame, text="Active Bots", style='TButton', command=self.list_active_bots).pack(pady=10, fill='x', padx=10)
 
         self.add_title_footer()  # recreate title and footer
 
@@ -138,7 +140,7 @@ class AutomatorApp(tk.Tk):
         input_frame = ttk.Frame(self.main_frame)
         input_frame.grid(row=1, column=0, columnspan=2, pady=10)
 
-        labels = ["type", "body", "date", "media path", "username"]
+        labels: tuple[str, ...] = ("type", "body", "date", "media path", "username")
         inputs = []
 
         for _id, label in enumerate(labels):
@@ -171,45 +173,64 @@ class AutomatorApp(tk.Tk):
 
         self.add_title_footer()  # recreate title and footer
 
+    def stop_auto_work(self, bot_username: str):
+        self.stop = (bot_username, True)
+
     def start_auto_work(self):
         """ Widget Window from clicking "Auto Reddit to Twitter" button """
-        def stop_auto_work():
-            self.stop_auto_work = (bot_username_entry(), True)
-
         def bot_username_entry():
             return inputs[0].get()
 
-        def start(subreddit_name: str):
+        def submit_btn_normal_state():
+            submit_btn['text'] = 'Start'
+            submit_btn['command'] = self.start_auto_work
+
+        def start(bot_username: str):
             submit_btn['text'] = 'Stop/Start'
-            if bot_username_entry() in self.active_bots:
-                stop_auto_work()
+
+            if bot_username_entry() in self.active_bots:  # stop command
+                self.stop_auto_work(bot_username_entry())
                 status_manager(False, active=(-1))
                 return
 
-            status_manager(False, active=1)
-            self.active_bots.append(bot_username_entry())
-            while not self.stop_auto_work[-1] and (self.stop_auto_work[0] != bot_username_entry()):
-                process = recon(subreddit_name, bot_username_entry())
+            err: str = f"can't start auto-run for bot username: '{bot_username}' No assigned subreddits on creation try to delete and recreate the bot"
+            try:
+                subreddits: list = [info['subreddits'].split(',') for username, info in get_available_bots() if username == bot_username][0]
+                if subreddits == ['']: ErrorDialogUI(err); return
+
+            except IndexError:
+                ErrorDialogUI(f"can't start auto-run bot username: '{bot_username}' does not exist"); return
+
+            except (AttributeError, KeyError):
+                ErrorDialogUI(err); return
+
+            else:
+                status_manager(False, active=1)
+                self.active_bots.append(bot_username_entry())
+
+            finally:
+                submit_btn_normal_state()
+
+            while (self.stop[0] != bot_username_entry()) and not self.stop[-1]:
+                process = recon(subreddits, bot_username_entry())
                 if not process.is_alive():
-                    submit_btn['text'] = 'Start'
-                    submit_btn['command'] = self.start_auto_work
+                    submit_btn_normal_state()
                     status_manager(False, active=(-1))
                     return
-
-                time.sleep(5)
+                time.sleep(60 * 60)  # scan the subreddit every 1 hour
 
         self.clear_frame()
         ttk.Label(self.main_frame, text="Create/Start Bot", font=self.font_title).grid(row=0, column=0, columnspan=2, pady=40)
 
         input_frame: ttk.Frame = ttk.Frame(self.main_frame)
         btns_frame: ttk.Frame = ttk.Frame(self.main_frame)
-        labels: list = ["username", "subreddit/s", "consumer key", "consumer secret", "access token", "access secret"]
+        labels: tuple[str, ...] = ("username", "subreddit/s", "consumer key", "consumer secret", "access token", "access secret")
         inputs: list[PlaceholderEntry] = []
 
         create_bot = ttk.Button(btns_frame, text="Create New Bot", style='TButton', command=lambda: self.thread(self.create_new_bot, {k: v for k, v in zip(labels, inputs)}))
-        remove_btn = ttk.Button(btns_frame, text="Remove Bot", style='TButton', command=lambda: self.thread(remove_bot, inputs[0].get()))
+        remove_btn = ttk.Button(btns_frame, text="Remove Bot", style='TButton', command=lambda: self.thread(remove_bot, bot_username_entry()))
         back_btn = ttk.Button(btns_frame, text="Back", style='TButton', command=self.create_main_window)
-        submit_btn = ttk.Button(btns_frame, text="Start", style='TButton', command=lambda: self.thread(start, inputs[1].get()))
+        submit_btn = ttk.Button(btns_frame, text="Start", style='TButton', command=lambda: self.thread(start, bot_username_entry()))
 
         for _id, label in enumerate(labels):
             ttk.Label(input_frame, text=f"{label}: ".capitalize(), font=self.font_default).grid(row=_id, column=0, sticky='e', padx=5, pady=5)
@@ -237,6 +258,24 @@ class AutomatorApp(tk.Tk):
 
         self.add_title_footer()  # recreate title and footer
 
+    def list_active_bots(self):
+        """ a widget to list all the currently active working bots """
+        self.clear_frame()
+        ttk.Label(self.main_frame, text="Active Bots", font=self.font_title).grid(row=0, column=0, columnspan=2, pady=40)
+
+        active_bots_frame: ttk.Frame = ttk.Frame(self.main_frame)
+        active_bots_frame.grid(row=1, column=0, columnspan=2, pady=15)
+
+        if len(self.active_bots) > 0:
+            for _id, bot_username in enumerate(self.active_bots):
+                ttk.Label(active_bots_frame, text=f"{_id + 1}. {bot_username}", font=self.font_default).grid(row=_id, column=0, pady=5)
+                ttk.Button(active_bots_frame, text="Stop", style='TButton', command=lambda: self.thread(self.stop_auto_work, bot_username)).grid(row=_id, column=1, pady=5, ipadx=10, padx=5)
+        else:
+            ttk.Label(active_bots_frame, text="No Active Bots Found", font=self.font_default, foreground="red").grid(row=1, column=0, columnspan=2, pady=25)
+
+        ttk.Button(active_bots_frame, text="Back", style='TButton', command=self.create_main_window).grid(row=len(self.active_bots), column=0, columnspan=2, pady=10, ipadx=65)
+        self.add_title_footer()
+
     def create_new_bot(self, entries: dict[str, ...]):
         def error():
             error_label: ttk.Label = ttk.Label(self.main_frame, text="Please fill all keys entries", font=self.error_font, foreground="red")
@@ -247,8 +286,10 @@ class AutomatorApp(tk.Tk):
         entries_text: list = []
         for k, v in entries.items():
             entry_text: str = v.get()
-            if not entry_text:
-                self.thread(error); return
+
+            if not entry_text: self.thread(error); return
+            if k == 'subreddit/s': entry_text: list = entry_text.split(',')
+
             entries_text.append(entry_text)
 
         add_new_bot(*entries_text)
