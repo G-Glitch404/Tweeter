@@ -21,7 +21,6 @@ var/
 *.egg
 MANIFEST
 *.manifest
-*.spec
 pip-log.txt
 pip-delete-this-directory.txt
 htmlcov/
@@ -70,4 +69,4 @@ db.sqlite3-journal
 .DS_Store
 *_thumb.*
 Thumbs.db
-ehthumbs.db
+ehthumbs.db!/app.spec

@@ -60,8 +60,6 @@ def fingerprint(obj: Hashable) -> str:
 def status_manager(
         checking: bool,
         *,
-        active: Optional[int] = None,
-        bots_count: Optional[int] = None,
         total: Optional[int] = None,
         scheduled: Optional[int] = None,
         uploaded: Optional[int] = None,
@@ -72,12 +70,6 @@ def status_manager(
 
     :param checking: if this flag is True it will return with no updating
     :type checking: bool
-
-    :param active: number of currently active bots (doing any operation)
-    :type active: int
-
-    :param bots_count: total number of available bots in the system
-    :type bots_count: int
 
     :param total: total number of posts that are available for posting
     :type total: int
@@ -95,15 +87,13 @@ def status_manager(
     :return: all the updated values in a list
     """
     status_ini = configparser.ConfigParser()
-    status_ini_filepath: str = path('Bots', 'status.ini')
+    status_ini_filepath: str = path('config', 'status.ini')
 
     status_ini.read(status_ini_filepath, 'utf-8')
     if not status_ini.has_section('status'):
         status_ini.add_section('status')
     section = status_ini['status']
 
-    if isinstance(active, int): section['running'] = str(int(section.get('running', '0')) + active)
-    if isinstance(bots_count, int): section['bots_count'] = str(int(section.get('bots_count', '0')) + bots_count)
     if isinstance(total, int): section["total_posts"] = str(int(section.get("total_posts", '0')) + total)
     if isinstance(scheduled, int): section["scheduled_posts"] = str(int(section.get("scheduled_posts", '0')) + scheduled)
     if isinstance(uploaded, int): section["uploaded_posts"] = str(int(section.get("uploaded_posts", '0')) + uploaded)
@@ -115,22 +105,20 @@ def status_manager(
     return list(section.values())
 
 
-def get_available_bots() -> dict[str, dict]:
+def get_available_bots() -> list[dict[str, dict]]:
     """ adds a new bot to the system """
     bots_ini = configparser.ConfigParser()
-    bots_ini_filepath: str = path('Bots', 'bots.ini')
+    bots_ini_filepath: str = path('config', 'bots.ini')
 
     bots_ini.read(bots_ini_filepath)
 
-    for bot in bots_ini.sections():
-        if not bot: continue
-        yield {bot: {k: v for k, v in bots_ini.items(bot)}}
+    return [{bot: {k: v for k, v in bots_ini.items(bot)}} for bot in bots_ini.sections() if bot]
 
 
 def add_new_bot(username: str, subreddit: str | list[str], consumer_key: str, consumer_secret: str, access_token: str, access_secret: str) -> bool:
     """ adds a new bot to the system """
     bots_ini = configparser.ConfigParser()
-    bots_ini_filepath: str = path('Bots', 'bots.ini')
+    bots_ini_filepath: str = path('config', 'bots.ini')
 
     bots_ini.read(bots_ini_filepath, 'utf-8')
     bots_ini.add_section(username)
@@ -147,7 +135,6 @@ def add_new_bot(username: str, subreddit: str | list[str], consumer_key: str, co
 
     with open(bots_ini_filepath, 'w') as configfile:
         bots_ini.write(configfile)
-    status_manager(False, bots_count=1)
     return True
 
 
@@ -155,7 +142,7 @@ def remove_bot(bot_username: str) -> bool:
     if not bot_username: return True
 
     bots_ini = configparser.ConfigParser()
-    bots_ini_filepath: str = path('Bots', 'bots.ini')
+    bots_ini_filepath: str = path('config', 'bots.ini')
 
     bots_ini.read(bots_ini_filepath)
     if not bots_ini.has_section(bot_username):
@@ -165,5 +152,4 @@ def remove_bot(bot_username: str) -> bool:
     bots_ini.remove_section(bot_username)
     with open(bots_ini_filepath, 'w') as configfile:
         bots_ini.write(configfile)
-    status_manager(False, bots_count=(-1))
     return True

@@ -52,7 +52,7 @@ class RedditAPI(Session):
 
         page = scrape(selector)
         if len(page) <= 0:
-            self.logger.warning(f'no posts found for the selected subreddit')
+            self.logger.warning(f'no posts found for the selected subreddit or subreddit was not found')
             return page
 
         self.logger.info(f'scraping {posts_count} posts from subreddit {page[0]["subreddit"]}')

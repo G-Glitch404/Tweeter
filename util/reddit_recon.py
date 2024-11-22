@@ -63,6 +63,7 @@ def recon(subreddits: Union[list[str], str], bot_username) -> Process:
             process.start()
 
             return process
+    return Process()
 
 
 if __name__ == '__main__':

@@ -1,0 +1,3 @@
+this file is needed for the app.spec to work properly in order to build the GUI version of the tool
+don't delete this file nor turn it into a hidden file like the other files into the rest of the project folders
+deleting or turning this into a hidden file will result in an error when trying to build the GUI app with pyinstaller
