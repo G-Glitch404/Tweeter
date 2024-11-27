@@ -230,16 +230,25 @@ class AutomatorApp(tk.Tk):
 
             submit_btn['text']: str = 'Stop/Start'
             username: str = bot_username_entry()
-            while (self.stop[0] != username) and not self.stop[-1]:  # TODO: bug detected if user changed the stop username while the 1 hour timeout is running bot will not stop fix this 
+            stop_bot: bool = False
+
+            while not stop_bot:
                 process = recon(subreddits, username)
-                if not process.is_alive():
-                    submit_btn_normal_state()
-                    remove_active(username)
-                    ErrorDialogUI(f"bot username: '{username}' was stopped probably by an error please re-create the bot or check the logs for more details if you don't know what's happening just contact the developer")
-                    self.show_message(f'bot username: {username} was stopped', 'orange', self.messages_font)
-                    return
-                time.sleep(60 * 60)  # scan the subreddit every 1 hour
-                # TODO: bug solution 1:  check every 0.5 secs if the bot should be stopped check using a while True loop
+                if not process.is_alive(): stop_bot: bool = True; break
+
+                start_time: float = time.perf_counter()
+                while time.perf_counter() - start_time <= (60 * 60):  # scan the subreddit every 1 hour
+                    time.sleep(0.5)
+                    if self.stop[-1] and self.stop[0] == username:
+                        stop_bot: bool = True; break
+
+            if stop_bot:
+                submit_btn_normal_state()
+                remove_active(username)
+                ErrorDialogUI(f"bot username: '{username}' was stopped probably by an error please re-create the bot or check the logs for more details if you don't know what's happening just contact the developer")
+                self.show_message(f'bot username: {username} was stopped', 'orange', self.messages_font)
+                return
+
             remove_active(username)  # just a fail-safe
 
         def load_bots_state():
