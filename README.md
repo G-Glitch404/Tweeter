@@ -10,7 +10,7 @@
 
 ### how to build the GUI
 1. first install pyinstaller run `pip install pyinstaller`
-2. secondly run `pyinstaller app.spec --clean`
+2. secondly run `pyinstaller app.spec --clean --noconfirm`
 3. you will find the .exe version in the `dist` folder
 
 ### how to use
