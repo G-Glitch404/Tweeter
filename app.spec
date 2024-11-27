@@ -9,21 +9,21 @@ seperator = '\\' if 'nt' in os.name.lower() else '/'
 
 # add specific hiddenimports for dependencies from requirements.txt
 hiddenimports += [
-   	'requests',         
-	'curl_cffi',  
-	'browserforge', 
-	'parsel',           
+   	'requests',
+	'curl_cffi',
+	'browserforge',
+	'parsel',
 
 	# these has to be explicitly added
-	'browserforge.fingerprints',  
-	'curl_cffi.requests',	
-    'logging.handlers', 
+	'browserforge.fingerprints',
+	'curl_cffi.requests',
+    'logging.handlers',
 
     'python_twitter_v2',  # module 'pytwitter'
     'python_dotenv',      # module 'dotenv'
-    
-	# in case there are issues with the alias    
-	'pytwitter',          
+
+	# in case there are issues with the alias
+	'pytwitter',
     'dotenv',
 
     'sqlite3',
@@ -33,7 +33,7 @@ hiddenimports += [
     'typing',
     'dataclasses',
     'json',
-    'multiprocessing',  
+    'multiprocessing',
     'threading',
 ]
 
@@ -60,7 +60,7 @@ datas = [
 a = Analysis(
     [f'GUI{seperator}app.py'],  # main script to start
     pathex=['GUI', 'Bots', 'Crawlers', 'logger', 'util'],  # include all directories
-    binaries=[],
+    binaries=[('/usr/local/lib/libpython3.12.so', 'libpython3.12.so')] if 'linux' in os.name.lower() else [],
     datas=datas,  # include all the data files
     hiddenimports=hiddenimports,  # make sure all submodules are included
     hookspath=[],
@@ -70,4 +70,4 @@ a = Analysis(
 
 pyz = PYZ(a.pure, a.zipfiles)
 exe = EXE(pyz, a.scripts, a.binaries, a.zipfiles, a.datas, [], name='Tweeter', icon='./icon.ico', debug=False, strip=False, upx=False, console=False)
-COLLECT(exe, a.binaries, a.zipfiles, a.datas, strip=False, upx=False, name='Tweeter')
+coll = COLLECT(exe, a.binaries, a.zipfiles, a.datas, strip=False, upx=False, name='Tweeter')
