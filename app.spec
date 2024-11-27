@@ -69,4 +69,5 @@ a = Analysis(
 )
 
 pyz = PYZ(a.pure, a.zipfiles)
-exe = EXE(pyz, a.scripts, a.binaries, a.zipfiles, a.datas, [], name='Tweeter', icon='./icon.ico', debug=False, strip=False, upx=True, console=False)
+exe = EXE(pyz, a.scripts, a.binaries, a.zipfiles, a.datas, [], name='Tweeter', icon='./icon.ico', debug=False, strip=False, upx=False, console=False)
+COLLECT(exe, a.binaries, a.zipfiles, a.datas, strip=False, upx=False, name='Tweeter')

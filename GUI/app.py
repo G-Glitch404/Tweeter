@@ -111,7 +111,7 @@ class AutomatorApp(tk.Tk):
         """ main widget window when app is first opened """
         self.clear_frame()
 
-        ttk.Label(self.main_frame, text="Reddit To xTwitter v1.0 Beta", font=self.font_title).grid(row=0, column=0, columnspan=2, pady=(10, 20))
+        ttk.Label(self.main_frame, text="Reddit To xTwitter v1.0 Alpha", font=self.font_title).grid(row=0, column=0, columnspan=2, pady=(10, 20))
 
         status_frame = ttk.Frame(self.main_frame)
         button_frame = ttk.Frame(self.main_frame)
@@ -242,7 +242,7 @@ class AutomatorApp(tk.Tk):
                     if self.stop[-1] and self.stop[0] == username:
                         stop_bot: bool = True; break
 
-            if stop_bot:
+            if stop_bot:    # works as a fail-safe
                 submit_btn_normal_state()
                 remove_active(username)
                 ErrorDialogUI(f"bot username: '{username}' was stopped probably by an error please re-create the bot or check the logs for more details if you don't know what's happening just contact the developer")
