@@ -5,7 +5,7 @@ import os
 
 # automatically find all submodules from the 'util', 'Bots', 'Crawlers', 'GUI', and other modules
 hiddenimports = collect_submodules('util') + collect_submodules('Bots') + collect_submodules('Crawlers') + collect_submodules('GUI') + collect_submodules('logger')
-seperator = '\\' if 'nt' in os.name.lower() else '/'
+sep = '\\' if 'nt' in os.name.lower() else '/'
 
 # add specific hiddenimports for dependencies from requirements.txt
 hiddenimports += [
@@ -39,26 +39,26 @@ hiddenimports += [
 
 # including .py files and other files from other directories
 datas = [
-    (f'.db{seperator}*', '.db'),
-    (f'.db{seperator}sql{seperator}*', f'.db{seperator}sql'),  # include the SQL files for recreating the database
-    (f'Bots{seperator}*', 'Bots'),
-    (f'Crawlers{seperator}*', 'Crawlers'),
-    (f'GUI{seperator}*', 'GUI'),
-    (f'config{seperator}*', 'config'),
-    (f'logger{seperator}*', 'logger'),
-    (f'media{seperator}*', 'media'),
-    (f'util{seperator}*', 'util'),
+    (f'.db{sep}*', '.db'),
+    (f'.db{sep}sql{sep}*', f'.db{sep}sql'),  # include the SQL files for recreating the database
+    (f'Bots{sep}*', 'Bots'),
+    (f'Crawlers{sep}*', 'Crawlers'),
+    (f'GUI{sep}*', 'GUI'),
+    (f'config{sep}*', 'config'),
+    (f'logger{sep}*', 'logger'),
+    (f'media{sep}*', 'media'),
+    (f'util{sep}*', 'util'),
     ('*.py', '.'),
 
 	# explicitly include the missing files for the dependency 'browserforge'
-	(f'util{seperator}browserforge{seperator}fingerprints', f'browserforge{seperator}fingerprints{seperator}data'),
-	(f'util{seperator}browserforge{seperator}headers', f'browserforge{seperator}headers{seperator}data'),
+	(f'util{sep}browserforge{sep}fingerprints', f'browserforge{sep}fingerprints{sep}data'),
+	(f'util{sep}browserforge{sep}headers', f'browserforge{sep}headers{sep}data'),
 
 ]
 
 # analyze the app and bundle everything needed
 a = Analysis(
-    [f'GUI{seperator}app.py'],  # main script to start
+    [f'GUI{sep}app.py'],  # main script to start
     pathex=['GUI', 'Bots', 'Crawlers', 'logger', 'util'],  # include all directories
     binaries=[('/usr/local/lib/libpython3.12.so', 'libpython3.12.so')] if 'linux' in os.name.lower() else [],
     datas=datas,  # include all the data files
