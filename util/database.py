@@ -81,3 +81,10 @@ class Database(threading.Thread):
         self.conn.commit()
         self.cursor.close()
         self.conn.close()
+
+
+if __name__ == '__main__':
+    db = Database()
+    db.cursor.execute("DROP TABLE IF EXISTS posts;")
+    db.cursor.execute("DROP TABLE IF EXISTS tweets;")
+    db.create_tables()

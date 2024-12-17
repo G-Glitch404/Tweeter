@@ -59,11 +59,11 @@ def manager(account_username: str, post: Post) -> Union[threading.Timer, bool]:
 
     account_info: dict = {}
     username: str = ''
-    for _, v in get_available_bots():
-        account: dict = list(v.items())[0]
-        if account[0] == username:
-            account_username: str = account[0]
-            account_info: dict = account[-1]
+    for account_dict in get_available_bots():
+        user, info = tuple(account_dict.items())[0]
+        if user == account_username:
+            username: str = user
+            account_info: dict = info
             break
 
     if not username or not account_info:

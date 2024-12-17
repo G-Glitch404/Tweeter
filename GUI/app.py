@@ -213,6 +213,9 @@ class AutomatorApp(tk.Tk):
                     username, info = next(iter(bot.items()))
                     if username != bot_username: continue
                     subreddits: list = subreddit.split(',') if (subreddit := info['subreddit']) and isinstance(subreddit, str) else []
+                    break
+                else:
+                    ErrorDialogUI(f'bot username "{bot_username}" was not found try re-creating it')
 
             except IndexError:
                 ErrorDialogUI(f"can't start auto-run bot username: '{bot_username}' does not exist"); return
@@ -232,6 +235,7 @@ class AutomatorApp(tk.Tk):
             username: str = bot_username_entry()
             stop_bot: bool = False
 
+            self.show_message(f'Started bot username: "{bot_username}" successfully.', 'green', self.messages_font)
             while not stop_bot:
                 process = recon(subreddits, username)
                 if not process.is_alive(): stop_bot: bool = True; break
@@ -244,7 +248,8 @@ class AutomatorApp(tk.Tk):
 
             if stop_bot:    # works as a fail-safe
                 submit_btn_normal_state()
-                remove_active(username)
+                try: remove_active(username)
+                except ValueError: pass
                 ErrorDialogUI(f"bot username: '{username}' was stopped probably by an error please re-create the bot or check the logs for more details if you don't know what's happening just contact the developer")
                 self.show_message(f'bot username: {username} was stopped', 'orange', self.messages_font)
                 return
@@ -276,7 +281,7 @@ class AutomatorApp(tk.Tk):
         load_export_frame.grid(row=2, column=0, columnspan=2, pady=5)
         btns_frame.grid(row=3, column=0, columnspan=2)
 
-        labels: tuple[str, ...] = ("username", "subreddit/s", "consumer key", "consumer secret", "access token", "access secret")
+        labels: tuple[str, ...] = ("username", "subreddit/s", "API key", "API secret", "access token", "access secret")
         inputs: list[PlaceholderEntry] = []
 
         # inputs frame
@@ -286,8 +291,8 @@ class AutomatorApp(tk.Tk):
             match label:
                 case "username": placeholder = "enter X bot username"
                 case "subreddit/s": placeholder = "subreddit/s for auto-work"
-                case "consumer key": placeholder = "enter X consumer key"
-                case "consumer secret": placeholder = "enter X consumer secret"
+                case "API key": placeholder = "enter X consumer key"
+                case "API secret": placeholder = "enter X consumer secret"
                 case "access token": placeholder = "enter X access token"
                 case "access secret": placeholder = "enter X access secret"
                 case _: placeholder = label
@@ -345,11 +350,16 @@ class AutomatorApp(tk.Tk):
 
     def create_new_bot(self, entries: dict[str, ...]):
         entries_text: list = []
+        blacklisted_chars: list[str] = ["\n", "@", 'r/', 'r\\', '/', '\\']
         for k, v in entries.items():
-            entry_text: str = v.get()
+            entry_text: str = str(v.get())
+            for char in blacklisted_chars:
+                entry_text: str = entry_text.replace(char, '')
+            entry_text = entry_text.strip()
 
             if not entry_text and k != 'subreddit/s':
-                self.thread(self.show_message, 'Please fill all keys entries', 'red', self.messages_font); return
+                self.thread(self.show_message, 'Please fill all keys entries', 'red', self.messages_font)
+                return
             if k == 'subreddit/s':
                 entry_text: list = entry_text.split(',')
 

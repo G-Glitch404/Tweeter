@@ -4,6 +4,8 @@ import time
 from logger.logger import Logger
 from functools import wraps
 
+from GUI.error_dialog import ErrorDialogUI
+
 retry_logger = Logger("Retry")
 catch_logger = Logger('ExceptionsHandler')
 __exceptions = (
@@ -18,7 +20,9 @@ def catch_exceptions(func, exceptions: tuple = __exceptions):
     def wrapper(*args, **kwargs):
         try: return func(*args, **kwargs)
         except exceptions as e:
-            catch_logger.exception(f'function "{func.__name__}" with parameters: "{args, kwargs}" failed with exception {e}')
+            err: str = f'function "{func.__name__}" with parameters: "{args, kwargs}" failed with exception {e}'
+            catch_logger.exception(err)
+            ErrorDialogUI(err)
             return False
 
     return wrapper
@@ -32,15 +36,25 @@ def retry(
     """ decorator for retrying a function after failure """
     @wraps(func)
     def wrapper(*args, **kwargs):
-        for _ in range(times):
+        for i in range(times):
             try:
                 response = func(*args, **kwargs)
                 if not response:
                     retry_logger.error(f'function {func.__name__} with parameters: {args, kwargs} failed with bad response {response} retying after {interval} seconds.')
+                    if i == times - 1:
+                        err = f'function {func.__name__} with parameters: {args, kwargs} failed after {times} retries wirg bad response: "{response}"'
+                        retry_logger.error(err)
+                        ErrorDialogUI(err)
+                        return False
                     continue
                 return response
             except exceptions as e:
                 retry_logger.exception(f'function {func.__name__} with parameters: {args, kwargs} failed with exception {e} retrying after {interval} seconds.')
+                if i == times - 1:
+                    err = f'function {func.__name__} with parameters: {args, kwargs} failed after {times} retries  with exception "{e}"'
+                    retry_logger.error(err)
+                    ErrorDialogUI(err)
+                    return False
                 time.sleep(interval)
         return False
 
